@@ -27,7 +27,11 @@ beq $t0, $zero, endStrLength
 move $t1, $t0
 subi $t1, $t1, 3 #Increments ascii
 sb $t1, 0($a3)
+<<<<<<< HEAD
 addi $a3, $a3, 1
+=======
+add $a3, $a3, 1
+>>>>>>> d3dbc18d1c56f1da2fbdaf620f2181670ff30478
 addi $a0, $a0, 1 #Increments position in the array
 j strLength
 endStrLength:
