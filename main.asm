@@ -141,5 +141,20 @@ checkBounds:
 	# this ensures that no weird chars are printed in the encrypted/decrypted output
 	# renard already has the algorithm for this, he just needs to implement it in MIPS asm
 	
+mod:
+	# move args into temp registers
+	move $t0, $a0
+	move $t1, $a1
+	
+	# divide the two numbers
+	div $t0, $t1
+	
+	# remainder stored in hi register, move remainder to $v0
+	mfhi $v0
+	
+	# return control to caller
+	jr $ra
+
+	
 	
 	
