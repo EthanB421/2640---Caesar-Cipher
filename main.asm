@@ -11,6 +11,7 @@ cipherPrompt:	.asciiz "Press '1' to encrypt or '2' to decrypt: "
 keyMsg:		.asciiz "Please input your desired key length: "
 resMsg:		.asciiz "Result: "
 contMsg:	.asciiz "\nPress '1' to continue or '0' to exit: "
+errMsg1:	.asciiz "Error: string must only contain letters.\n"
 
 .text
 main:
@@ -25,7 +26,8 @@ main:
 	la $a1, 254 				# Read from the first 254 bytes of the string inputted by user
 	syscall
 	
-	# verify user string (call checkUserString here!)
+	# verify user string (call checkWord here!)
+	
 	
 	# reserve space for the result string
 	la $a3, resString
@@ -104,10 +106,12 @@ strEncrypt:
 	lb $t0, ($a0)				# load nth byte from userString (byte = current ascii char)
 	beq $t0, $zero, endStrEncrypt		# if byte == 0, end loop (0 = null, end of string)
 	move $t1, $t0				# copy current byte to $t1
+	beq $t1, 32, skipEncrypt		# if the char is a space (ascii 32), don't do anything to the ascii value
+	beq $t1, 0, skipEncrypt			# if the char is a null (ascii 0), don't do anything to the ascii value
 	add $t1, $t1, $s1 			# Increments ascii by specified key length
-	# to-do: add function call here to ensure that ascii value is between 65 and 90 (only uppercase A-Z)
+	skipEncrypt:				# char is a space/null. leave the ascii value alone
 	sb $t1, 0($a3)				# store the current byte into the resString
-	addi $a3, $a3, 1			# increment resString address (reserve more space for string?)
+	addi $a3, $a3, 1			# increment resString address (reserve more space for string)
 	addi $a0, $a0, 1 			# Increments position in the array
 	j strEncrypt				# loop back to beginning of function
 	endStrEncrypt:
@@ -117,16 +121,45 @@ strDecrypt:
 	lb $t0, ($a0)				# load nth byte from userString
 	beq $t0, $zero, endStrDecrypt		# if byte == 0, end loop (0 = null, end of string)
 	move $t1, $t0				# copy current byte to $t1
-	sub $t1, $t1, $s1 			# decrements ascii by spevified key length
-	# to-do: add function call here to ensure that ascii value is between 65 and 90 (only uppercase A-Z)
+	beq $t1, 32, skipDecrypt		# if the char is a space (ascii 32), don't do anything to the ascii value
+	beq $t1, 0, skipDecrypt			# if the char is a null (ascii 0), don't do anything to the ascii value
+	sub $t1, $t1, $s1 			# decrements ascii by specified key length
+	skipDecrypt:				# char is a space. leave the ascii value alone
 	sb $t1, 0($a3)				# store current byte into the resString
-	addi $a3, $a3, 1			# increment resString address (reserve more space for string?)
+	addi $a3, $a3, 1			# increment resString address (reserve more space for string)
 	addi $a0, $a0, 1 			# Increments position in the array
 	j strDecrypt				# loop back to beginning of function
 	endStrDecrypt:
 	jr $ra					# return control to caller
+	
+checkWord:
+	# this function should be run in a loop that iterates thru the user's string.
+	# returns a 0 (false) if it finds an invalid char, returns a 1 (true) if it finds a valid char.
+	
+	# ensure ascii values are between 65 and 90. if they are, we are ok to proceed
+   	bge $a0, 65, endCheckWord		# ascii 65 = A = valid char
+    	ble $a0, 90, endCheckWord		# ascii 90 = Z = valid char
+    	
+    	# if ascii values are lowercase (between 97 and 122), convert the char to uppercase
+    	bge $a0, 97, toUpperCase		# ascii 97 = a = make this uppercase
+    	ble $a0, 122, toUpperCase		# ascii 122 = z = make this uppercase
+    	
+    	toUpperCase:
+    		subi $a0, $a0, 32		# subtracting 32 from the ascii value of a lowercase will convert it to uppercase
+    		j endCheckWord    		# letter should be ok
+    	
+    	# on failure
+    	li $v0, 0				# if function returns a 0, an invalid char was found, tell the user and have them try again
+    	jr $ra
 
-checkUserString:
+	endCheckWord:
+    		li $v0, 1			# if returns a 1, the current char is valid, continue iterating thru loop
+    		jr $ra
+    		
+checkNumber:
+	
+
+# checkUserString:
 	# this function will check userString to ensure:
 	# 1. ascii values stay between 65 and 90 (i.e. all uppercase chars)
 	#	if it finds a lowercase char, convert it to uppercase (subtract 32)
@@ -136,7 +169,7 @@ checkUserString:
 	# iterate thru usrString at $a0 to check each character
 	# no need to check resString, because resString should not have any illegal chars after running it thru checkBounds
 	
-checkBounds:
+# checkBounds:
 	# this function will check the ascii value and ensure that it is between 65(A) and 90(Z)
 	# this ensures that no weird chars are printed in the encrypted/decrypted output
 	# renard already has the algorithm for this, he just needs to implement it in MIPS asm
